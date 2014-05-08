@@ -29,8 +29,7 @@ docroot = tree.getroot()
 objectsCount = 0
 unknown_sku_count = 0
 
-big_list = []
-
+# This csv file will be overwritten each run.
 with open('temp.csv', 'wb') as csvfile:
     writer = csv.writer(
         csvfile,
@@ -38,6 +37,7 @@ with open('temp.csv', 'wb') as csvfile:
         quotechar='"',
         quoting=csv.QUOTE_MINIMAL)
 
+    # Header row.
     writer.writerow([
         'Product Code',
         'Name',
@@ -104,6 +104,8 @@ with open('temp.csv', 'wb') as csvfile:
 
         img_sml = 'http://placehold.it/296x316'
         img_lrg = 'http://placehold.it/318x415&text={}'.format(
+            # Would like to have the spaces kept as '+', but slugify's dashes
+            # will do for now.
             slugify(title.replace(' ', '+'))
         )
 
