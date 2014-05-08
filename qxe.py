@@ -1,4 +1,5 @@
 import elementtree.ElementTree as ETree
+from pprint import pprint as pp
 
 namespace = {
     'excerpt': "http://wordpress.org/export/1.2/excerpt/",
@@ -16,7 +17,6 @@ def ns(nspace, tagname):
     )
     return r
 
-
 tree = ETree.parse("data/product_data-sprinklersystemshop.wordpress.2014-05-08.xml")
 docroot = tree.getroot()
 
@@ -25,18 +25,30 @@ docroot = tree.getroot()
 
 objectsCount = 0
 
+big_list = []
+
 for item in docroot.findall('channel/item'):
     title = item.find('title').text
     desc = item.find(ns('content', 'encoded')).text
-    metakeys = item.findall(ns('wp', 'postmeta'))
 
-    if 'DDCWP 2' in title:
-        print title
-        for metakey in metakeys:
-            ETree.dump(metakey)
-            # if metakey[0].text
+    metakeys_raw = item.findall(ns('wp', 'postmeta'))
+    metakeys = {}
 
-    # print title
+    for metakey in metakeys_raw:
+        # ETree.dump(metakey)
+        metakeys[metakey[0].text] = metakey[1].text
+
+    # pp(metakeys)
+    def get_key_val(keyname, default_val = ''):
+        try:
+            return metakeys[keyname]
+        except KeyError:
+            return default_val
+
+    price_regular = get_key_val('_wpsc_price')
+    price_special = get_key_val('_wpsc_special_price')
+
+    print price_special, title
     # print desc
 
     objectsCount += 1
