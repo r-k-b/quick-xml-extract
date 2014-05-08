@@ -1,5 +1,6 @@
 import elementtree.ElementTree as ETree
 from pprint import pprint as pp
+import csv
 
 namespace = {
     'excerpt': "http://wordpress.org/export/1.2/excerpt/",
@@ -17,6 +18,7 @@ def ns(nspace, tagname):
     )
     return r
 
+
 tree = ETree.parse("data/product_data-sprinklersystemshop.wordpress.2014-05-08.xml")
 docroot = tree.getroot()
 
@@ -27,30 +29,44 @@ objectsCount = 0
 
 big_list = []
 
-for item in docroot.findall('channel/item'):
-    title = item.find('title').text
-    desc = item.find(ns('content', 'encoded')).text
+with open('temp.csv', 'wb') as csvfile:
+    writer = csv.writer(
+        csvfile,
+        delimiter=',',
+        quotechar='|',
+        quoting=csv.QUOTE_MINIMAL)
 
-    metakeys_raw = item.findall(ns('wp', 'postmeta'))
-    metakeys = {}
+    for item in docroot.findall('channel/item'):
+        title = item.find('title').text
+        desc = item.find(ns('content', 'encoded')).text
 
-    for metakey in metakeys_raw:
-        # ETree.dump(metakey)
-        metakeys[metakey[0].text] = metakey[1].text
+        metakeys_raw = item.findall(ns('wp', 'postmeta'))
+        metakeys = {}
 
-    # pp(metakeys)
-    def get_key_val(keyname, default_val = ''):
-        try:
-            return metakeys[keyname]
-        except KeyError:
-            return default_val
+        for metakey in metakeys_raw:
+            # ETree.dump(metakey)
+            metakeys[metakey[0].text] = metakey[1].text
 
-    price_regular = get_key_val('_wpsc_price')
-    price_special = get_key_val('_wpsc_special_price')
+        # pp(metakeys)
+        def get_key_val(keyname, default_val=''):
+            try:
+                return metakeys[keyname]
+            except KeyError:
+                return default_val
 
-    print price_special, title
-    # print desc
+        price_regular = get_key_val('_wpsc_price')
+        price_special = get_key_val('_wpsc_special_price')
 
-    objectsCount += 1
+        # print price_special, title
+        # print desc
+
+        writer.writerow([
+            title,
+            price_special,
+            price_regular
+        ])
+
+        objectsCount += 1
 
 print objectsCount
+
