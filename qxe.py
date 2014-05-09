@@ -101,6 +101,10 @@ with open('temp.csv', 'wb') as csvfile:
         title = item.find('title').text
         link = item.find('link').text
         desc = item.find(ns('content', 'encoded')).text
+        try:
+            desc = desc.encode('ascii', 'ignore')
+        except AttributeError:
+            desc = ''
 
         img_sml = 'http://placehold.it/296x316'
         img_lrg = 'http://placehold.it/318x415&text={}'.format(
@@ -149,7 +153,7 @@ with open('temp.csv', 'wb') as csvfile:
         writer.writerow([
             sku,                    # Product Code
             title,                  # Name
-            '',                     # Description
+            desc,                   # Description
             img_sml,                # Small Image
             img_lrg,                # Large Image
             categories,             # Catalogue
