@@ -101,6 +101,7 @@ with open('temp.csv', 'wb') as csvfile:
         title = item.find('title').text
         link = item.find('link').text
         desc = item.find(ns('content', 'encoded')).text
+        # Source might have non-ascii chars, which CSV parsers will choke on
         try:
             desc = desc.encode('ascii', 'ignore')
         except AttributeError:
