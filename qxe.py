@@ -30,6 +30,40 @@ docroot = tree.getroot()
 
 objectsCount = 0
 unknown_sku_count = 0
+default_image_small = 'http://placehold.it/296x316'
+default_image_large = 'http://placehold.it/318x415&text='
+
+
+def extract_metakeys(targetitem):
+    metakey_dict = {}
+    for metakey in targetitem.findall(ns('wp', 'postmeta')):
+        # ETree.dump(metakey)
+        metakey_dict[metakey[0].text] = metakey[1].text
+    return metakey_dict
+
+
+def get_key_val(keyset, keyname, default_val=''):
+    try:
+        return keyset[keyname]
+    except KeyError:
+        return default_val
+
+
+def retrieve_attachment_urls(attachment_docroot=docroot):
+    the_list = {}
+    for attachment_item in attachment_docroot.findall('channel/item'):
+        attachment_itemtype = attachment_item.find(ns('wp', 'post_type')).text
+        if attachment_itemtype == 'wpsc-product':
+            attachment_id = attachment_item.find(ns('wp', 'post_id')).text
+            attachment_url = get_key_val(
+                extract_metakeys(attachment_item),
+                '_wp_attached_file'
+            )
+            the_list[attachment_id] = attachment_url
+    return the_list
+
+
+attachment_url_by_id = retrieve_attachment_urls(docroot)
 
 # This csv file will be overwritten each run.
 with open('temp.csv', 'wb') as csvfile:
@@ -111,38 +145,22 @@ with open('temp.csv', 'wb') as csvfile:
             desc = ''
 
         if itemtype == 'wpsc-product':
-            img_sml = 'http://placehold.it/296x316'
-            img_lrg = 'http://placehold.it/318x415&text={}'.format(
-                # Would like to have the spaces kept as '+', but slugify's dashes
-                # will do for now.
-                slugify(title.replace(' ', '+'))
-            )
 
             categories = ''
             for cat in item.findall('category'):
                 categories += '/i/{};'.format(cat.text)
 
-            metakeys_raw = item.findall(ns('wp', 'postmeta'))
-            metakeys = {}
-
-            for metakey in metakeys_raw:
-                # ETree.dump(metakey)
-                metakeys[metakey[0].text] = metakey[1].text
+            metakeys = extract_metakeys(item)
 
             # pp(metakeys)
-            def get_key_val(keyname, default_val=''):
-                try:
-                    return metakeys[keyname]
-                except KeyError:
-                    return default_val
 
             # Avoid None values (can't pass in values like AU/; )
-            price_regular_raw = get_key_val('_wpsc_price') or '0.00'
+            price_regular_raw = get_key_val(metakeys, '_wpsc_price') or '0.00'
             price_regular = 'AU/{};'.format(price_regular_raw)
-            price_special_raw = get_key_val('_wpsc_special_price') or '0.00'
+            price_special_raw = get_key_val(metakeys, '_wpsc_special_price') or '0.00'
             price_special = 'AU/{};'.format(price_special_raw)
 
-            sku = get_key_val('_wpsc_sku')
+            sku = get_key_val(metakeys, '_wpsc_sku')
             try:
                 sku_length = len(sku)
             except TypeError:
@@ -150,6 +168,22 @@ with open('temp.csv', 'wb') as csvfile:
             if sku_length < 2:
                 sku = 'UNKNOWN-{}'.format(unknown_sku_count)
                 unknown_sku_count += 1
+
+            # Find product image from <wp:post_type>attachment</wp:post_type> items
+            # We've already parsed the XML once to get the list into memory
+            img_id = get_key_val(metakeys, '_thumbnail_id')
+            if len(img_id) > 0:
+                try:
+                    product_image_small = attachment_url_by_id[img_id]
+                    product_image_large = attachment_url_by_id[img_id]
+                except KeyError:
+                    product_image_small = 'img id# {}'.format(
+                        get_key_val(metakeys, '_thumbnail_id')
+                    )
+                    product_image_large = product_image_small
+            else:  # no thumbnail, so use defaults
+                product_image_small = default_image_small
+                product_image_large = default_image_large + slugify(title)
 
             # print price_special, title
             # print desc
@@ -159,8 +193,8 @@ with open('temp.csv', 'wb') as csvfile:
                 sku,                    # Product Code
                 title,                  # Name
                 desc,                   # Description
-                img_sml,                # Small Image
-                img_lrg,                # Large Image
+                product_image_small,    # Small Image
+                product_image_large,    # Large Image
                 categories,             # Catalogue
                 price_special,          # Sale Price
                 price_regular,          # Retail Price
