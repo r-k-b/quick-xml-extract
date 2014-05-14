@@ -1,5 +1,5 @@
 import csv
-
+# from pprint import pprint as pp
 import elementtree.ElementTree as ETree
 from slugify import slugify
 
@@ -32,6 +32,7 @@ objectsCount = 0
 unknown_sku_count = 0
 default_image_small = 'http://placehold.it/296x316'
 default_image_large = 'http://placehold.it/318x415&text='
+imported_images_path = '/images/imp/'
 
 
 def extract_metakeys(targetitem):
@@ -52,13 +53,13 @@ def get_key_val(keyset, keyname, default_val=''):
 def retrieve_attachment_urls(attachment_docroot=docroot):
     the_list = {}
     for attachment_item in attachment_docroot.findall('channel/item'):
-        attachment_itemtype = attachment_item.find(ns('wp', 'post_type')).text
-        if attachment_itemtype == 'wpsc-product':
+        if attachment_item.find(ns('wp', 'post_type')).text == 'attachment':
             attachment_id = attachment_item.find(ns('wp', 'post_id')).text
             attachment_url = get_key_val(
                 extract_metakeys(attachment_item),
                 '_wp_attached_file'
             )
+            # pp(extract_metakeys(attachment_item))
             the_list[attachment_id] = attachment_url
     return the_list
 
@@ -157,6 +158,7 @@ with open('temp.csv', 'wb') as csvfile:
             # Avoid None values (can't pass in values like AU/; )
             price_regular_raw = get_key_val(metakeys, '_wpsc_price') or '0.00'
             price_regular = 'AU/{};'.format(price_regular_raw)
+
             price_special_raw = get_key_val(metakeys, '_wpsc_special_price') or '0.00'
             price_special = 'AU/{};'.format(price_special_raw)
 
@@ -171,13 +173,14 @@ with open('temp.csv', 'wb') as csvfile:
 
             # Find product image from <wp:post_type>attachment</wp:post_type> items
             # We've already parsed the XML once to get the list into memory
+            # Also, this assumes a product has only one 'thumbnail'...
             img_id = get_key_val(metakeys, '_thumbnail_id')
             if len(img_id) > 0:
                 try:
-                    product_image_small = attachment_url_by_id[img_id]
-                    product_image_large = attachment_url_by_id[img_id]
+                    product_image_small = imported_images_path + attachment_url_by_id[img_id]
+                    product_image_large = imported_images_path + attachment_url_by_id[img_id]
                 except KeyError:
-                    product_image_small = 'img id# {}'.format(
+                    product_image_small = 'img_id_{}'.format(
                         get_key_val(metakeys, '_thumbnail_id')
                     )
                     product_image_large = product_image_small
