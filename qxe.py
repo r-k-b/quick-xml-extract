@@ -37,7 +37,7 @@ docroot = tree.getroot()
 
 objectsCount = 0
 unknown_sku_count = 0
-default_image_small = 'http://placehold.it/296x316'
+default_image_small = 'http://placehold.it/296x316&text=Image+Coming+Soon'
 default_image_large = 'http://placehold.it/318x415&text='
 imported_images_path = '/images/imp/'
 
@@ -56,7 +56,9 @@ def map_imported_image_url(original_image_url):
     :return: string
     """
     orig = urlparse(original_image_url).path
-    return orig.replace('/files', '/images/imp')
+
+    # Remove the trailing slash from the imported_images_path
+    return orig.replace('/files', imported_images_path[:-1])
 
 
 def extract_metakeys(targetitem):
@@ -148,7 +150,7 @@ def retrieve_attachment_urls_for_all_postids(attachment_docroot=docroot):
             except KeyError:
                 the_list[post_parent] = [attachment_url]
 
-    pp(the_list)
+    # pp(the_list)
     return the_list
 
 
@@ -280,6 +282,20 @@ with open('temp.csv', 'wb') as csvfile:
             # print price_special, title
             # print desc
 
+            # Fill poplet image field, and overwrite the 'thumbnail' image if we can.
+            poplet_images = ''
+            try:
+                for imgurl in attachment_images_by_parent_postid[item.find(ns('wp', 'post_id')).text]:
+                    poplet_images += imgurl + ';'
+
+                    # Just keep the latest image URL, for simplicity.
+                    # TODO: which image should we use for the primary? The largest?
+                    product_image_small = imgurl
+                    product_image_large = imgurl
+            except KeyError:
+                # No images associated with this wp:post_id.
+                pass
+
             # @formatter:off
             writer.writerow([
                 sku,                    # Product Code
@@ -313,7 +329,7 @@ with open('temp.csv', 'wb') as csvfile:
                 'custom2 text',         # Custom 2
                 '',                     # Custom 3
                 link,                   # Custom 4
-                '',                     # Poplets
+                poplet_images,          # Poplets
                 'Y',                    # Enabled
                 'N',                    # Capture Details
                 '',                     # Limit Download Count
