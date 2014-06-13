@@ -51,6 +51,11 @@ def get_key_val(keyset, keyname, default_val=''):
 
 
 def retrieve_attachment_urls(attachment_docroot=docroot):
+    """
+    Iterate once over the whole XML, create list to match attachment id (wp:post_id) to image URL
+    :param attachment_docroot:
+    :return:
+    """
     the_list = {}
     for attachment_item in attachment_docroot.findall('channel/item'):
         if attachment_item.find(ns('wp', 'post_type')).text == 'attachment':
