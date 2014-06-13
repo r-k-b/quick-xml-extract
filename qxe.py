@@ -2,6 +2,7 @@ import csv
 from pprint import pprint as pp
 import elementtree.ElementTree as ETree
 from slugify import slugify
+from urlparse import urlparse
 
 
 namespace = {
@@ -39,6 +40,23 @@ unknown_sku_count = 0
 default_image_small = 'http://placehold.it/296x316'
 default_image_large = 'http://placehold.it/318x415&text='
 imported_images_path = '/images/imp/'
+
+
+def map_imported_image_url(original_image_url):
+    """
+    Map the imported image URLs to their new home. E.g.:
+
+    'http://sprinklersystemshop.com.au/files/2012/06/Xcore-outdoor.jpg'
+
+    becomes
+
+    '/images/imp/2012/06/Xcore-outdoor.jpg'
+
+    :param original_image_url: string
+    :return: string
+    """
+    orig = urlparse(original_image_url).path
+    return orig.replace('/files', '/images/imp')
 
 
 def extract_metakeys(targetitem):
@@ -120,7 +138,9 @@ def retrieve_attachment_urls_for_all_postids(attachment_docroot=docroot):
     for attachment_item in attachment_docroot.findall('channel/item'):
         if attachment_item.find(ns('wp', 'post_type')).text == 'attachment':
             post_parent = attachment_item.find(ns('wp', 'post_parent')).text
-            attachment_url = attachment_item.find(ns('wp', 'attachment_url')).text
+            attachment_url = map_imported_image_url(
+                attachment_item.find(ns('wp', 'attachment_url')).text
+            )
 
             # Values are always either undefined or lists
             try:
