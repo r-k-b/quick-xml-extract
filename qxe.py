@@ -1,5 +1,5 @@
 import csv
-# from pprint import pprint as pp
+from pprint import pprint as pp
 import elementtree.ElementTree as ETree
 from slugify import slugify
 
@@ -14,7 +14,13 @@ namespace = {
 
 
 def ns(nspace, tagname):
-    # used to match namespaced tags, like <wp:post_type>
+    """
+    used to match namespaced tags, like <wp:post_type>
+
+    :param nspace:
+    :param tagname:
+    :return:
+    """
     r = "{{{a}}}{b}".format(
         a=namespace[nspace],
         b=tagname
@@ -36,6 +42,26 @@ imported_images_path = '/images/imp/'
 
 
 def extract_metakeys(targetitem):
+    """
+    Turn the <wp:...> tags into a dict.
+
+    Sample XML:
+        <wp:postmeta>
+            <wp:meta_key>_wpsc_custom_thumb_w</wp:meta_key>
+            <wp:meta_value><![CDATA[foo]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key>_wpsc_custom_thumb_h</wp:meta_key>
+            <wp:meta_value><![CDATA[bar]]></wp:meta_value>
+        </wp:postmeta>
+
+    :param targetitem:
+    :return: dict, like:
+    {
+        _wpsc_custom_thumb_w: 'foo',
+        _wpsc_custom_thumb_h: 'bar'
+    }
+    """
     metakey_dict = {}
     for metakey in targetitem.findall(ns('wp', 'postmeta')):
         # ETree.dump(metakey)
@@ -44,6 +70,14 @@ def extract_metakeys(targetitem):
 
 
 def get_key_val(keyset, keyname, default_val=''):
+    """
+    Safely get key values, returns a default value if key is not present.
+
+    :param keyset:
+    :param keyname:
+    :param default_val:
+    :return:
+    """
     try:
         return keyset[keyname]
     except KeyError:
@@ -69,7 +103,37 @@ def retrieve_attachment_urls(attachment_docroot=docroot):
     return the_list
 
 
+def retrieve_attachment_urls_for_all_postids(attachment_docroot=docroot):
+    """
+    Iterate once over the whole XML, create a lookup of all images that reference a particular parent post.
+
+    A parent post may have zero or more image URLs.
+
+    :param attachment_docroot:
+    :return: dict of arrays, like:
+    {
+        123: ['/img/a.jpg', '/img/b.jpg'],
+        ...
+    }
+    """
+    the_list = {}
+    for attachment_item in attachment_docroot.findall('channel/item'):
+        if attachment_item.find(ns('wp', 'post_type')).text == 'attachment':
+            post_parent = attachment_item.find(ns('wp', 'post_parent')).text
+            attachment_url = attachment_item.find(ns('wp', 'attachment_url')).text
+
+            # Values are always either undefined or lists
+            try:
+                the_list[post_parent].append(attachment_url)
+            except KeyError:
+                the_list[post_parent] = [attachment_url]
+
+    pp(the_list)
+    return the_list
+
+
 attachment_url_by_id = retrieve_attachment_urls(docroot)
+attachment_images_by_parent_postid = retrieve_attachment_urls_for_all_postids(docroot)
 
 # This csv file will be overwritten each run.
 with open('temp.csv', 'wb') as csvfile:
