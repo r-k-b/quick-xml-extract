@@ -2,7 +2,6 @@ __author__ = 'VadShaytReth'
 
 
 import Queue
-import time
 import csv
 from threading import Thread
 
@@ -14,11 +13,19 @@ def do_work(item):
 
 
 def source():
+    """
+    Fetch all the poplet URLs from the CSV file.
+
+    @:return array of strings
+
+    """
     with open(csv_source, 'rb') as csvfile:
         product_row = csv.reader(csvfile)
         for row in product_row:
-            yield row[3]
-            yield row[4]
+            if ';' in row[31]:
+                for url in row[31].split(';'):
+                    if len(url) > 1:
+                        yield url
 
 
 def worker():
@@ -43,5 +50,5 @@ def grab(urls_to_check=None):
     q.join()       # block until all tasks are done
 
 if __name__ == '__main__':
-    for product_row in source():
-        print product_row
+    for image_url in source():
+        print image_url
