@@ -43,6 +43,13 @@ def worker():
 
 
 def transform_url(url=''):
+    """
+    Maps a URL fragment to a subfolder of a known host.
+
+    :param url: URL path with known prefix
+    :return: complete url including host
+    :rtype: str or unicode
+    """
     de_prefixed = url.split(url_prefix_to_strip)[1]
     re_prefixed = url_prefix_to_add + de_prefixed
     return re_prefixed
@@ -60,7 +67,7 @@ def grab(urls_to_grab=None):
         t.start()
 
     for item in urls_to_grab:
-        q.put( transform_url(item))
+        q.put(transform_url(item))
 
     q.join()       # block until all tasks are done
 
