@@ -18,11 +18,27 @@ image_drop_folder = '../data/images'
 
 
 def do_work(item):
+    """
+    Downloads a file from the provided URL, and saves it to a folder.
+    Preserves some parent folders.
+
+    :param item: Complete URL
+    :return: nothing
+    """
     image_data = urllib2.urlopen(item)
-    print('Saving: {}'.format(item))
-    with open(get_image_local_path(item), 'wb') as image_file:
+    image_file_path = get_image_local_path(item)
+    print('Saving: {0} to {1}'.format(item,image_file_path))
+
+    # We may need to create several parent folders for the image file
+    try:
+        os.makedirs(os.path.split(image_file_path)[0])
+    except WindowsError:
+        # folder(s) already exist.
+        pass
+
+    with open(image_file_path, 'wb') as image_file:
         image_file.write(image_data.read())
-    print('!')
+    print('Done.')
 
 
 def source():
@@ -76,7 +92,7 @@ def grab(urls_to_grab=None):
 
     :param urls_to_grab: (array|set) of string
     """
-    for i in range(1):
+    for i in range(3):
         t = Thread(target=worker)
         t.daemon = True
         t.start()
