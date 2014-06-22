@@ -1,3 +1,4 @@
+# coding=utf-8
 __author__ = 'VadShaytReth'
 
 
@@ -48,6 +49,21 @@ def transform_url(url=''):
     return re_prefixed
 
 
+def get_image_local_path(url=''):
+    """
+    Map the remote URL with the path we'll be saving the images to.
+
+    'http://eangulus.com/bwidubbo/files/2013/10/tee.jpg' → '../data/images/2013/10/tee.jpg'
+
+    :param url: string
+    :return: file path
+    :rtype: str or unicode
+    """
+    de_prefixed = url.split(url_prefix_to_add)[1]
+    re_prefixed = image_drop_folder + de_prefixed
+    return re_prefixed
+
+
 def grab(urls_to_grab=None):
     """
     Download images from a defined location.
@@ -71,10 +87,15 @@ if __name__ == '__main__':
     for image_url in source():
         set_of_urls.add( transform_url(image_url))
 
-    pp(set_of_urls)
-
     # TODO: Drop any we already have the file for
-    # for image_url in set_of_urls:
+    clean_set_of_urls = set()
+    for image_url in set_of_urls:
+        if not os.path.isfile(image_url):
+            clean_set_of_urls.add(image_url)
+        else:
+            print('Already got: {}'.format(image_url))
 
+    print('Original set length: {}'.format(len(set_of_urls)))
+    print('Cleaned set length: {}'.format(len(clean_set_of_urls)))
 
     # Fetch & save the rest
