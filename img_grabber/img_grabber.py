@@ -5,8 +5,10 @@ __author__ = 'VadShaytReth'
 import Queue
 import csv
 import os
-from pprint import pprint as pp
+import urllib2
 from threading import Thread
+# noinspection PyUnresolvedReferences
+from pprint import pprint as pp
 
 q = Queue.Queue(maxsize=0)
 csv_source = '../temp.csv'
@@ -16,7 +18,11 @@ image_drop_folder = '../data/images'
 
 
 def do_work(item):
-    print("processing", item)
+    image_data = urllib2.urlopen(item)
+    print('Saving: {}'.format(item))
+    with open(get_image_local_path(item), 'wb') as image_file:
+        image_file.write(image_data.read())
+    print('!')
 
 
 def source():
@@ -70,13 +76,13 @@ def grab(urls_to_grab=None):
 
     :param urls_to_grab: (array|set) of string
     """
-    for i in range(3):
+    for i in range(1):
         t = Thread(target=worker)
         t.daemon = True
         t.start()
 
     for item in urls_to_grab:
-        q.put( transform_url(item))
+        q.put(item)
 
     q.join()       # block until all tasks are done
 
@@ -85,12 +91,12 @@ if __name__ == '__main__':
     # Get URLs to work on
     set_of_urls = set()
     for image_url in source():
-        set_of_urls.add( transform_url(image_url))
+        set_of_urls.add(transform_url(image_url))
 
     # TODO: Drop any we already have the file for
     clean_set_of_urls = set()
     for image_url in set_of_urls:
-        if not os.path.isfile(image_url):
+        if not os.path.isfile(get_image_local_path(image_url)):
             clean_set_of_urls.add(image_url)
         else:
             print('Already got: {}'.format(image_url))
@@ -99,3 +105,4 @@ if __name__ == '__main__':
     print('Cleaned set length: {}'.format(len(clean_set_of_urls)))
 
     # Fetch & save the rest
+    grab(clean_set_of_urls)
